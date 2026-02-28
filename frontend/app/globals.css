@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+/* ===============================
+   ROOT THEME VARIABLES
+================================= */
+
+:root {
+  --background: #fff5f9;
+  --foreground: #2d1b69;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ===============================
+   DARK MODE (Optional)
+================================= */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1e1b4b;
+    --foreground: #ffffff;
+  }
+}
+
+/* ===============================
+   GLOBAL BODY STYLING
+================================= */
+
+body {
+  background: linear-gradient(135deg,
+      #ffe4f0,
+      #f9d5ff,
+      #d6e4ff);
+  color: var(--foreground);
+  font-family: 'Comic Neue', cursive, Arial, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ===============================
+   MAGICAL BUTTON EFFECTS
+================================= */
+
+button {
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: scale(1.1);
+}
+
+/* ===============================
+   ANIMATED STARS BACKGROUND
+================================= */
+
+.stars {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: transparent url("https://www.transparenttextures.com/patterns/stardust.png") repeat;
+  animation: moveStars 60s linear infinite;
+  z-index: -1;
+  opacity: 0.5;
+}
+
+@keyframes moveStars {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: 1000px 1000px;
+  }
+}
+
+/* ===============================
+   SOFT FLOAT ANIMATION
+================================= */
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.float {
+  animation: float 4s ease-in-out infinite;
+}
