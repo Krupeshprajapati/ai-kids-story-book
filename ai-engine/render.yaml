@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: ai-engine
+    env: node
+    buildCommand: |
+      apt-get update && apt-get install -y poppler-utils
+      npm install
+    startCommand: node server.js
