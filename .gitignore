@@ -36,7 +36,6 @@ ai-engine/server/templates/
 ai-engine/server/uploads/
 
 # ML Models
-backend/models/
 *.onnx
 
 # Uploads
