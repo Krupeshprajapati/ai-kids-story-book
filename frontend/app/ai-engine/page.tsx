@@ -2,7 +2,7 @@ export default function AIEnginePage() {
     return (
         <div className="w-full h-screen">
             <iframe
-                src="http://localhost:5001"
+                src="https://ai-kids-story-book.onrender.com"
                 className="w-full h-full border-none"
             />
         </div>
