@@ -43,3 +43,6 @@ backend/models/
 uploads/
 
 *.pdf
+
+frontend/node_modules/
+frontend/.next/
