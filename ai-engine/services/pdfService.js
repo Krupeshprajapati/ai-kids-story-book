@@ -18,7 +18,7 @@ const { PDFDocument, rgb } = require('pdf-lib');
 function extractPagesFromPDF(pdfPath, outputDir) {
   return new Promise(function (resolve, reject) {
     var scriptPath = path.join(__dirname, '..', 'scripts', 'pdf_to_images.py');
-    var command = 'python "' + scriptPath + '" "' + pdfPath + '" "' + outputDir + '"';
+    var command = 'python3 "' + scriptPath + '" "' + pdfPath + '" "' + outputDir + '"';
 
     console.log('📄 Extracting pages from PDF...');
     console.log('   Command:', command);
