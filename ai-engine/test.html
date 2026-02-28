@@ -1,0 +1,1355 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personalized Storybook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Nunito:wght@600;700;800;900&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+      font-family: 'Nunito', 'Comic Neue', cursive, sans-serif;
+      background: linear-gradient(135deg, #ffd6f0, #f5d0ff, #d0e8ff, #d0fff0);
+      color: #2d1b69;
+      overflow: hidden;
+    }
+
+    /* ── Animated bg: stardust + floating orbs ── */
+    .bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .bg::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 55% at 10% 15%, rgba(255, 170, 255, 0.55) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 50% at 90% 85%, rgba(255, 140, 190, 0.5) 0%, transparent 55%),
+        radial-gradient(ellipse 45% 40% at 55% 45%, rgba(160, 200, 255, 0.45) 0%, transparent 55%),
+        radial-gradient(ellipse 35% 35% at 80% 15%, rgba(160, 255, 210, 0.4) 0%, transparent 50%);
+    }
+
+    .bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: url('https://www.transparenttextures.com/patterns/stardust.png') repeat;
+      opacity: 0.25;
+      animation: moveStars 60s linear infinite;
+    }
+
+    @keyframes moveStars {
+      from {
+        background-position: 0 0;
+      }
+
+      to {
+        background-position: 1000px 1000px;
+      }
+    }
+
+    /* Floating emoji bubbles */
+    .bubble {
+      position: fixed;
+      animation: floatUp linear infinite;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+      user-select: none;
+    }
+
+    @keyframes floatUp {
+      0% {
+        transform: translateY(108vh) rotate(0deg);
+        opacity: 0;
+      }
+
+      8% {
+        opacity: 0.6;
+      }
+
+      92% {
+        opacity: 0.6;
+      }
+
+      100% {
+        transform: translateY(-12vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    /* ── Layout ── */
+    .shell {
+      position: relative;
+      z-index: 1;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .hdr {
+      text-align: center;
+      margin-bottom: 32px;
+      flex-shrink: 0;
+    }
+
+    .hdr .pill-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(109, 40, 217, 0.12);
+      border: 1.5px solid rgba(109, 40, 217, 0.3);
+      border-radius: 999px;
+      padding: 5px 16px;
+      font-size: 11.5px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      color: #6d28d9;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .hdr h1 {
+      font-size: clamp(24px, 3.5vw, 38px);
+      font-weight: 900;
+      background: linear-gradient(120deg, #4c1d95 0%, #7c3aed 45%, #ec4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+
+    .hdr p {
+      color: #6d28d9;
+      font-size: 14px;
+      margin-top: 5px;
+      opacity: 0.7;
+    }
+
+    /* ── Carousel viewport ── */
+    .carousel-vp {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      flex-shrink: 0;
+      overflow: visible;
+      perspective: 1200px;
+      /* 3D depth stage */
+    }
+
+    /* ── Cards track ── */
+    .track {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      position: relative;
+      transition: transform 0.52s cubic-bezier(0.34, 1.2, 0.64, 1);
+      will-change: transform;
+    }
+
+    /* ── Individual card ── */
+    .scard {
+      flex-shrink: 0;
+      width: 380px;
+      min-height: 500px;
+      border-radius: 28px;
+      padding: 32px 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+
+      /* Glassmorphism base */
+      backdrop-filter: blur(24px) saturate(1.6);
+      -webkit-backdrop-filter: blur(24px) saturate(1.6);
+
+      transition:
+        transform 0.52s cubic-bezier(0.34, 1.2, 0.64, 1),
+        opacity 0.52s ease,
+        box-shadow 0.52s ease,
+        filter 0.52s ease;
+
+      /* default: side card */
+      transform: scale(0.82) translateY(18px);
+      opacity: 0.45;
+      filter: brightness(0.6) blur(1.5px);
+      box-shadow: none;
+      pointer-events: none;
+      user-select: none;
+      transform-style: preserve-3d;
+      /* enable child 3D */
+    }
+
+    /* Inner shine streak — top-left glint */
+    .scard::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 60%;
+      height: 50%;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0) 60%);
+      border-radius: 28px 0 0 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .scard.active {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+      filter: none;
+      pointer-events: all;
+      box-shadow:
+        0 0 0 1.5px rgba(255, 255, 255, 0.5),
+        0 30px 80px rgba(109, 40, 217, 0.22),
+        0 8px 30px rgba(249, 168, 212, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    .scard.prev,
+    .scard.next {
+      opacity: 0.75;
+      /* No brightness — light bg + glass was over-bleaching. Use darker tint + desaturate instead */
+      filter: blur(0.8px) saturate(0.55) contrast(0.9);
+      transform: scale(0.84) translateY(14px);
+      pointer-events: all;
+      cursor: pointer;
+      /* Darker glass tint so they read as "behind" */
+      background-blend-mode: multiply;
+    }
+
+    /* Card backgrounds — glass tints per step */
+    .scard-0 {
+      background: linear-gradient(145deg, rgba(253, 244, 255, 0.55) 0%, rgba(237, 233, 254, 0.45) 100%);
+      border: 1.5px solid rgba(200, 170, 255, 0.55);
+    }
+
+    .scard-1 {
+      background: linear-gradient(145deg, rgba(239, 246, 255, 0.55) 0%, rgba(219, 234, 254, 0.45) 100%);
+      border: 1.5px solid rgba(160, 210, 255, 0.55);
+    }
+
+    .scard-2 {
+      background: linear-gradient(145deg, rgba(255, 247, 237, 0.55) 0%, rgba(254, 215, 170, 0.4) 100%);
+      border: 1.5px solid rgba(255, 190, 120, 0.5);
+    }
+
+    .scard-3 {
+      background: linear-gradient(145deg, rgba(240, 253, 244, 0.55) 0%, rgba(187, 247, 208, 0.4) 100%);
+      border: 1.5px solid rgba(120, 240, 185, 0.5);
+    }
+
+    /* Glow orb inside card */
+    .scard::before {
+      content: "";
+      position: absolute;
+      top: -60px;
+      left: -40px;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0;
+      transition: opacity 0.5s;
+      pointer-events: none;
+    }
+
+    .scard.active::before {
+      opacity: 0.7;
+    }
+
+    .scard-0::before {
+      background: rgba(167, 139, 250, 0.4);
+    }
+
+    .scard-1::before {
+      background: rgba(147, 197, 253, 0.4);
+    }
+
+    .scard-2::before {
+      background: rgba(253, 186, 116, 0.4);
+    }
+
+    .scard-3::before {
+      background: rgba(110, 231, 183, 0.4);
+    }
+
+    /* Top accent bar */
+    .scard::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 36px;
+      right: 36px;
+      height: 3px;
+      border-radius: 0 0 6px 6px;
+    }
+
+    .scard-0::after {
+      background: linear-gradient(90deg, #7c3aed, #ec4899);
+    }
+
+    .scard-1::after {
+      background: linear-gradient(90deg, #2563eb, #38bdf8);
+    }
+
+    .scard-2::after {
+      background: linear-gradient(90deg, #ea580c, #fbbf24);
+    }
+
+    .scard-3::after {
+      background: linear-gradient(90deg, #059669, #34d399);
+    }
+
+    /* Step number badge */
+    .sbadge {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      color: rgba(109, 40, 217, 0.6);
+      background: rgba(109, 40, 217, 0.1);
+      border: 1px solid rgba(109, 40, 217, 0.2);
+      border-radius: 999px;
+      padding: 3px 11px;
+    }
+
+    /* Card icon */
+    .scard-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Icon boxes — pastel fills */
+    .ic-purple {
+      background: rgba(167, 139, 250, 0.2);
+      border: 1.5px solid rgba(139, 92, 246, 0.4);
+    }
+
+    .ic-blue {
+      background: rgba(147, 197, 253, 0.2);
+      border: 1.5px solid rgba(59, 130, 246, 0.4);
+    }
+
+    .ic-orange {
+      background: rgba(253, 186, 116, 0.2);
+      border: 1.5px solid rgba(249, 115, 22, 0.4);
+    }
+
+    .ic-green {
+      background: rgba(110, 231, 183, 0.2);
+      border: 1.5px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .stitle {
+      font-size: 20px;
+      font-weight: 900;
+      color: #2d1b69;
+      position: relative;
+      z-index: 1;
+    }
+
+    .ssub {
+      font-size: 13px;
+      color: #6d28d9;
+      opacity: 0.7;
+      line-height: 1.55;
+      position: relative;
+      z-index: 1;
+      margin-top: 3px;
+    }
+
+    .sep {
+      height: 1px;
+      background: rgba(109, 40, 217, 0.12);
+      flex-shrink: 0;
+    }
+
+    /* Card body scroll area */
+    .cbody {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cbody::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    .cbody::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 99px;
+    }
+
+    /* Form elements */
+    .lbl {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #6d28d9;
+      margin-bottom: 6px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+
+    .inp {
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1.5px solid rgba(109, 40, 217, 0.2);
+      border-radius: 12px;
+      color: #2d1b69;
+      font-family: 'Nunito', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .inp::placeholder {
+      color: rgba(109, 40, 217, 0.35);
+    }
+
+    .inp:focus {
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    }
+
+    /* Upload zone */
+    .uzone {
+      position: relative;
+      border: 2px dashed rgba(109, 40, 217, 0.25);
+      border-radius: 14px;
+      padding: 22px 14px;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.5);
+      transition: all 0.25s;
+    }
+
+    .uzone:hover {
+      border-color: #7c3aed;
+      background: rgba(139, 92, 246, 0.08);
+    }
+
+    .uzone.has-file {
+      border-color: #059669;
+      background: rgba(16, 185, 129, 0.08);
+      border-style: solid;
+    }
+
+    .uzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .uzone .uicon {
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+
+    .uzone p {
+      color: #6d28d9;
+      opacity: 0.6;
+      font-size: 12.5px;
+    }
+
+    .uzone .fname {
+      color: #059669;
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 5px;
+      display: none;
+    }
+
+    /* Result box */
+    .rbox {
+      border-radius: 10px;
+      padding: 11px 13px;
+      font-size: 12px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+      display: none;
+      border: 1px solid;
+    }
+
+    .rbox.success {
+      background: rgba(5, 150, 105, 0.1);
+      color: #065f46;
+      border-color: rgba(5, 150, 105, 0.3);
+    }
+
+    .rbox.error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #991b1b;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .rbox.info {
+      background: rgba(109, 40, 217, 0.08);
+      color: #4c1d95;
+      border-color: rgba(109, 40, 217, 0.25);
+    }
+
+    /* Saved pill */
+    .pill {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 9px;
+      padding: 8px 11px;
+      font-size: 11px;
+      color: #92400e;
+      font-family: monospace;
+      flex-shrink: 0;
+    }
+
+    /* Progress */
+    .prog-wrap {
+      display: none;
+      flex-shrink: 0;
+    }
+
+    .prog-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #475569;
+      margin-bottom: 5px;
+    }
+
+    .prog-bar {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.07);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .prog-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #7c3aed, #ec4899, #f97316);
+      background-size: 200% 100%;
+      border-radius: 999px;
+      transition: width 0.5s ease;
+      animation: shimmer 2.5s linear infinite;
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: 200% center
+      }
+
+      100% {
+        background-position: -200% center
+      }
+    }
+
+    /* Nav buttons */
+    .nav-row {
+      display: flex;
+      gap: 10px;
+      margin-top: auto;
+      padding-top: 6px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 13px 16px;
+      border: none;
+      border-radius: 14px;
+      font-family: "Outfit", sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: all 0.22s;
+      letter-spacing: 0.2px;
+    }
+
+    /* btn-back removed — navigation via side arrows only */
+
+    .btn-p {
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(124, 58, 237, 0.5), 0 0 0 1px rgba(236, 72, 153, 0.2);
+      letter-spacing: 0.3px;
+    }
+
+    .btn-p:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 36px rgba(124, 58, 237, 0.65), 0 0 0 1px rgba(236, 72, 153, 0.3);
+    }
+
+    .btn-p:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-p:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-g {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(16, 185, 129, 0.5);
+      letter-spacing: 0.3px;
+    }
+
+    .btn-g:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 36px rgba(16, 185, 129, 0.65);
+    }
+
+    .btn-g:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-g:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ── Arrow nav buttons outside cards ── */
+    .arrow-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: rgba(255, 255, 255, 0.65);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s;
+      z-index: 10;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .arrow-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .arrow-btn:disabled {
+      opacity: 0.2;
+      cursor: default;
+    }
+
+    .arrow-left {
+      left: calc(50% - 450px);
+    }
+
+    .arrow-right {
+      right: calc(50% - 450px);
+    }
+
+    /* ── Step dots ── */
+    .dots {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 28px;
+      flex-shrink: 0;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(109, 40, 217, 0.2);
+      transition: all 0.35s cubic-bezier(.34, 1.56, .64, 1);
+    }
+
+    .dot.active {
+      background: linear-gradient(135deg, #6d28d9, #a855f7);
+      width: 24px;
+      border-radius: 4px;
+      box-shadow: 0 0 10px rgba(109, 40, 217, 0.4);
+    }
+
+    .dot.done {
+      background: #059669;
+    }
+
+    /* Summary table */
+    .sum-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: 12.5px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .sum-row:last-child {
+      border-bottom: none;
+    }
+
+    .sum-row .sl {
+      color: #64748b;
+    }
+
+    .sum-row .sv {
+      color: #f1f5f9;
+      font-weight: 600;
+      font-family: monospace;
+      font-size: 11.5px;
+      max-width: 55%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Touch swipe support */
+    .track-outer {
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Photo preview */
+    .photo-preview {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .photo-preview img {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #7c3aed;
+      box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15), 0 6px 20px rgba(0, 0, 0, 0.15);
+      animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes popIn {
+      from {
+        transform: scale(0) rotate(-10deg);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+      }
+    }
+
+    .photo-preview .preview-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #6d28d9;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .photo-preview .preview-ok {
+      font-size: 11px;
+      color: #059669;
+      font-weight: 700;
+    }
+
+    /* Confetti particle */
+    .confetti-p {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      pointer-events: none;
+      z-index: 9999;
+      animation: confettiFall linear forwards;
+    }
+
+    @keyframes confettiFall {
+      0% {
+        transform: translateY(-10px) rotate(0deg);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateY(110vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="bg"></div>
+
+  <!-- Floating emoji bubbles -->
+  <div class="bubble" style="left:5%;font-size:26px;animation-duration:9s;animation-delay:0s">⭐</div>
+  <div class="bubble" style="left:15%;font-size:20px;animation-duration:11s;animation-delay:1.5s">🌟</div>
+  <div class="bubble" style="left:25%;font-size:30px;animation-duration:8s;animation-delay:3s">🎈</div>
+  <div class="bubble" style="left:40%;font-size:18px;animation-duration:13s;animation-delay:0.5s">✨</div>
+  <div class="bubble" style="left:55%;font-size:24px;animation-duration:10s;animation-delay:2s">🦋</div>
+  <div class="bubble" style="left:65%;font-size:22px;animation-duration:7s;animation-delay:4s">🌈</div>
+  <div class="bubble" style="left:75%;font-size:28px;animation-duration:12s;animation-delay:1s">🎀</div>
+  <div class="bubble" style="left:85%;font-size:20px;animation-duration:9s;animation-delay:3.5s">💫</div>
+  <div class="bubble" style="left:90%;font-size:26px;animation-duration:14s;animation-delay:0.8s">🌸</div>
+  <div class="bubble" style="left:48%;font-size:18px;animation-duration:8s;animation-delay:5s">📖</div>
+
+  <div class="shell">
+
+    <!-- Header -->
+    <div class="hdr">
+      <h1>📚 Personalized Storybook</h1>
+      <p>🧙‍♂️ Just 4 magical steps to your child's dream book! ✨🎉</p>
+    </div>
+
+    <!-- Carousel -->
+    <div class="carousel-vp" style="position:relative; width:100%; max-width:900px;">
+
+      <!-- Left arrow -->
+      <button class="arrow-btn arrow-left" id="arrowLeft" onclick="shiftBy(-1)" disabled>&#8592;</button>
+
+      <!-- Track: 820px wide, active card (380px) centered with 220px peek on each side -->
+      <div class="track-outer"
+        style="width:820px; overflow:hidden; mask-image:linear-gradient(to right, transparent 0px, black 140px, black calc(100% - 140px), transparent 100%); -webkit-mask-image:linear-gradient(to right, transparent 0px, black 140px, black calc(100% - 140px), transparent 100%);">
+        <div class="track" id="track">
+
+          <!-- CARD 0: Template -->
+          <div class="scard scard-0 active" id="c0">
+            <span class="sbadge">01 / 04</span>
+            <div class="scard-icon ic-purple">📄</div>
+            <div>
+              <div class="stitle">Upload Template PDF</div>
+              <div class="ssub">Admin uploads the base storybook PDF with illustrations.</div>
+            </div>
+            <div class="sep"></div>
+            <div class="cbody">
+              <div>
+                <div class="lbl">Template Name</div>
+                <input class="inp" type="text" id="templateName" placeholder="e.g. Space Adventure" />
+              </div>
+              <div>
+                <div class="lbl">PDF File</div>
+                <div class="uzone" id="zone-pdf">
+                  <input type="file" id="pdfFile" accept=".pdf" onchange="onFile('pdfFile','zone-pdf','fname-pdf')" />
+                  <div class="uicon">📁</div>
+                  <p>Click to browse or drag &amp; drop</p>
+                  <p style="font-size:10.5px;margin-top:2px;opacity:0.5">Accepts .pdf</p>
+                  <div class="fname" id="fname-pdf"></div>
+                </div>
+              </div>
+              <div id="r0" class="rbox"></div>
+              <div class="pill" id="pill-tmpl">📋 <span id="pill-tmpl-t"></span></div>
+            </div>
+            <div class="nav-row">
+              <button class="btn btn-p" onclick="uploadTemplate()">📚 Upload Template →</button>
+            </div>
+          </div>
+
+          <!-- CARD 1: Photo -->
+          <div class="scard scard-1" id="c1">
+            <span class="sbadge">02 / 04</span>
+            <div class="scard-icon ic-blue">🧒</div>
+            <div>
+              <div class="stitle">Upload Child's Photo</div>
+              <div class="ssub">Clear, front-facing photo. Face will be embedded in illustrations.</div>
+            </div>
+            <div class="sep"></div>
+            <div class="cbody">
+              <div>
+                <div class="lbl">Photo</div>
+                <div class="uzone" id="zone-photo">
+                  <input type="file" id="photoFile" accept="image/*"
+                    onchange="onFile('photoFile','zone-photo','fname-photo',true)" />
+                  <div class="uicon" id="photo-uicon">📸</div>
+                  <p id="photo-hint">Click to browse or drag &amp; drop</p>
+                  <p id="photo-hint2" style="font-size:10.5px;margin-top:2px;opacity:0.5">Accepts JPG, PNG, WEBP</p>
+                  <div class="fname" id="fname-photo"></div>
+                </div>
+                <!-- Photo Preview -->
+                <div class="photo-preview" id="photo-preview">
+                  <img id="preview-img" src="" alt="Child preview" />
+                  <div class="preview-name" id="preview-name"></div>
+                  <div class="preview-ok">✅ Looks great! Ready to upload.</div>
+                </div>
+              </div>
+              <div id="r1" class="rbox"></div>
+              <div class="pill" id="pill-id">👤 <span id="pill-id-t"></span></div>
+            </div>
+            <div class="nav-row">
+              <button class="btn btn-p" onclick="uploadPhoto()">📸 Upload Photo</button>
+            </div>
+          </div>
+
+          <!-- CARD 2: Generate -->
+          <div class="scard scard-2" id="c2">
+            <span class="sbadge">03 / 04</span>
+            <div class="scard-icon ic-orange">✨</div>
+            <div>
+              <div class="stitle">Generate Book</div>
+              <div class="ssub">AI face-swaps on all pages. Takes 2–4 minutes.</div>
+            </div>
+            <div class="sep"></div>
+            <div class="cbody">
+              <div>
+                <div class="lbl">Child's Name (optional)</div>
+                <input class="inp" type="text" id="childName" placeholder="e.g. Aarav" />
+              </div>
+              <div class="prog-wrap" id="prog-wrap">
+                <div class="prog-meta">
+                  <span id="prog-lbl">Processing…</span>
+                  <span id="prog-pct">0%</span>
+                </div>
+                <div class="prog-bar">
+                  <div class="prog-fill" id="prog-fill" style="width:0%"></div>
+                </div>
+              </div>
+              <div id="r2" class="rbox"></div>
+              <div class="pill" id="pill-job">🔖 <span id="pill-job-t"></span></div>
+            </div>
+            <div class="nav-row">
+              <button class="btn btn-p" id="genBtn" onclick="generateBook()">✨ Generate Book</button>
+            </div>
+          </div>
+
+          <!-- CARD 3: Download -->
+          <div class="scard scard-3" id="c3">
+            <span class="sbadge">04 / 04</span>
+            <div class="scard-icon ic-green">🎉</div>
+            <div>
+              <div class="stitle">Download Your Book</div>
+              <div class="ssub">Your personalized storybook is ready. Download as PDF!</div>
+            </div>
+            <div class="sep"></div>
+            <div class="cbody">
+              <div id="r3" class="rbox"></div>
+              <div
+                style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:14px;margin-top:2px;">
+                <div
+                  style="font-size:11px;font-weight:700;color:#475569;letter-spacing:0.6px;text-transform:uppercase;margin-bottom:10px;">
+                  Summary</div>
+                <div id="summary"></div>
+              </div>
+            </div>
+            <div class="nav-row">
+              <button class="btn btn-g" id="dlBtn" onclick="downloadBook()">📥 Download PDF</button>
+            </div>
+          </div>
+
+        </div><!-- /track -->
+      </div><!-- /track-outer -->
+
+      <!-- Right arrow -->
+      <button class="arrow-btn arrow-right" id="arrowRight" onclick="shiftBy(1)">&#8594;</button>
+
+    </div><!-- /carousel-vp -->
+
+    <!-- Dots -->
+    <div class="dots">
+      <div class="dot active" id="d0"></div>
+      <div class="dot" id="d1"></div>
+      <div class="dot" id="d2"></div>
+      <div class="dot" id="d3"></div>
+    </div>
+
+  </div><!-- /shell -->
+
+  <script>
+    var SERVER = "http://localhost:5001";
+    var savedTemplateId = "";
+    var savedIdentityId = "";
+    var savedJobId = "";
+    var pollInterval = null;
+    var cur = 0;
+    var total = 4;
+    var CARD_W = 380; // card width (matches CSS width of .scard)
+    var GAP = 20;     // gap between cards
+    var TRACK_W = 820; // track-outer width (must match HTML)
+    var CENTER_OFFSET = (TRACK_W - CARD_W) / 2; // = 220px — shifts first card to center
+
+    // ── Position track so active card is perfectly centered ──
+    function positionTrack() {
+      var track = document.getElementById("track");
+      // offset = centering padding - (card index × step)
+      var offset = CENTER_OFFSET - (cur * (CARD_W + GAP));
+      track.style.transform = "translateX(" + offset + "px)";
+    }
+
+    // ── Update card classes for active/prev/next ──
+    function refreshClasses() {
+      for (var i = 0; i < total; i++) {
+        var c = document.getElementById("c" + i);
+        c.classList.remove("active", "prev", "next");
+        if (i === cur) c.classList.add("active");
+        if (i === cur - 1) c.classList.add("prev");
+        if (i === cur + 1) c.classList.add("next");
+      }
+    }
+
+    // ── Update dots ──
+    function refreshDots() {
+      for (var i = 0; i < total; i++) {
+        var d = document.getElementById("d" + i);
+        d.classList.remove("active", "done");
+        if (i < cur) d.classList.add("done");
+        if (i === cur) d.classList.add("active");
+      }
+    }
+
+    // ── Update arrows ──
+    function refreshArrows() {
+      document.getElementById("arrowLeft").disabled = cur === 0;
+      document.getElementById("arrowRight").disabled = cur === total - 1;
+    }
+
+    // ── Navigate ──
+    function goTo(idx) {
+      if (idx < 0 || idx >= total) return;
+      cur = idx;
+      // Reset tilt state when navigating
+      targetX = 0; targetY = 0; tiltX = 0; tiltY = 0;
+      if (tiltCard) tiltCard.style.removeProperty('transform');
+      positionTrack();
+      refreshClasses();
+      refreshDots();
+      refreshArrows();
+      setTimeout(attachTilt, 520); // attach after transition settles
+    }
+
+    function shiftBy(delta) { goTo(cur + delta); }
+
+    // Click side cards to navigate
+    document.addEventListener("DOMContentLoaded", function () {
+      for (var i = 0; i < total; i++) {
+        (function (idx) {
+          document.getElementById("c" + idx).addEventListener("click", function (e) {
+            if (idx !== cur) goTo(idx);
+          });
+        })(i);
+      }
+      positionTrack();
+      refreshArrows();
+      attachTilt(); // start 3D tilt on card 0
+    });
+
+    // ── Touch/swipe support ──
+    var touchStartX = 0;
+    document.addEventListener("touchstart", function (e) { touchStartX = e.touches[0].clientX; });
+    document.addEventListener("touchend", function (e) {
+      var dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) > 50) shiftBy(dx < 0 ? 1 : -1);
+    });
+
+    // ── 3D tilt on active card ──
+    var tiltCard = null;
+    var tiltRAF = null;
+    var tiltX = 0, tiltY = 0;
+    var targetX = 0, targetY = 0;
+
+    function attachTilt() {
+      if (tiltCard) {
+        tiltCard.removeEventListener('mousemove', onTiltMove);
+        tiltCard.removeEventListener('mouseleave', onTiltLeave);
+      }
+      tiltCard = document.getElementById('c' + cur);
+      if (!tiltCard) return;
+      tiltCard.addEventListener('mousemove', onTiltMove);
+      tiltCard.addEventListener('mouseleave', onTiltLeave);
+    }
+
+    function onTiltMove(e) {
+      var rect = tiltCard.getBoundingClientRect();
+      var cx = rect.left + rect.width / 2;
+      var cy = rect.top + rect.height / 2;
+      targetY = ((e.clientX - cx) / (rect.width / 2)) * 9;  // left-right
+      targetX = -((e.clientY - cy) / (rect.height / 2)) * 7;  // up-down
+      if (!tiltRAF) tiltRAF = requestAnimationFrame(smoothTilt);
+    }
+
+    function onTiltLeave() {
+      targetX = 0; targetY = 0;
+      if (!tiltRAF) tiltRAF = requestAnimationFrame(smoothTilt);
+    }
+
+    function smoothTilt() {
+      tiltX += (targetX - tiltX) * 0.12;
+      tiltY += (targetY - tiltY) * 0.12;
+      var done = Math.abs(tiltX - targetX) < 0.01 && Math.abs(tiltY - targetY) < 0.01;
+      if (tiltCard) {
+        // Dynamic shadow to shift with tilt
+        var sx = -tiltY * 2, sy = tiltX * 2;
+        tiltCard.style.transform = 'scale(1) translateY(0) rotateX(' + tiltX + 'deg) rotateY(' + tiltY + 'deg)';
+        tiltCard.style.boxShadow = [
+          '0 0 0 1.5px rgba(255,255,255,0.5)',
+          (sx + 'px ') + ((sy + 30) + 'px') + ' 60px rgba(109,40,217,0.2)',
+          '0 8px 30px rgba(249,168,212,0.3)',
+          'inset 0 1px 0 rgba(255,255,255,0.6)'
+        ].join(',');
+      }
+      tiltRAF = done ? null : requestAnimationFrame(smoothTilt);
+    }
+
+    // ── File select ──
+    function onFile(inputId, zoneId, fnameId, isPhoto) {
+      var f = document.getElementById(inputId).files[0];
+      if (!f) return;
+      document.getElementById(zoneId).classList.add("has-file");
+      var el = document.getElementById(fnameId);
+      el.textContent = "✓ " + f.name;
+      el.style.display = "block";
+
+      // Photo preview thumbnail
+      if (isPhoto) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          document.getElementById("preview-img").src = e.target.result;
+          document.getElementById("preview-name").textContent = f.name;
+          document.getElementById("photo-uicon").style.display = "none";
+          document.getElementById("photo-hint").style.display = "none";
+          document.getElementById("photo-hint2").style.display = "none";
+          el.style.display = "none";
+          document.getElementById("photo-preview").style.display = "flex";
+        };
+        reader.readAsDataURL(f);
+      }
+    }
+
+    // ── STEP 1: Upload Template ──
+    async function uploadTemplate() {
+      var fInput = document.getElementById("pdfFile");
+      var nInput = document.getElementById("templateName");
+      var rDiv = document.getElementById("r0");
+      if (!fInput.files[0]) { showR(rDiv, "⚠ Please select a PDF first!", "error"); return; }
+      var fd = new FormData();
+      fd.append("template", fInput.files[0]);
+      fd.append("name", nInput.value || "Untitled");
+      showR(rDiv, "⏳ Uploading and processing PDF…", "info");
+      try {
+        var res = await fetch(SERVER + "/api/templates/upload", { method: "POST", body: fd });
+        var data = await res.json();
+        if (res.ok) {
+          savedTemplateId = data.templateId;
+          showR(rDiv, "✅ Uploaded!\n\nPages: " + data.pageCount + "\nID: " + data.templateId, "success");
+          showPill("pill-tmpl", "pill-tmpl-t", "Template ID: " + savedTemplateId);
+          setTimeout(function () { goTo(1); }, 1100);
+        } else { showR(rDiv, "❌ " + data.error, "error"); }
+      } catch (e) { showR(rDiv, "❌ " + e.message + "\n\nMake sure server is running!", "error"); }
+    }
+
+    // ── STEP 2: Upload Photo ──
+    async function uploadPhoto() {
+      var fInput = document.getElementById("photoFile");
+      var rDiv = document.getElementById("r1");
+      if (!fInput.files[0]) { showR(rDiv, "⚠ Please select a photo first!", "error"); return; }
+      var fd = new FormData();
+      fd.append("photo", fInput.files[0]);
+      showR(rDiv, "⏳ Uploading photo…", "info");
+      try {
+        var res = await fetch(SERVER + "/api/upload-face", { method: "POST", body: fd });
+        var data = await res.json();
+        if (res.ok) {
+          savedIdentityId = data.identityId;
+          showR(rDiv, "✅ Uploaded!\n\nIdentity ID: " + data.identityId, "success");
+          showPill("pill-id", "pill-id-t", "Identity ID: " + savedIdentityId);
+          setTimeout(function () { goTo(2); }, 1100);
+        } else { showR(rDiv, "❌ " + data.error, "error"); }
+      } catch (e) { showR(rDiv, "❌ " + e.message, "error"); }
+    }
+
+    // ── STEP 3: Generate ──
+    async function generateBook() {
+      var rDiv = document.getElementById("r2");
+      var childName = document.getElementById("childName").value;
+      if (!savedTemplateId) { showR(rDiv, "❌ Complete Step 1 first", "error"); return; }
+      if (!savedIdentityId) { showR(rDiv, "❌ Complete Step 2 first", "error"); return; }
+      document.getElementById("genBtn").disabled = true;
+      document.getElementById("prog-wrap").style.display = "block";
+      showR(rDiv, "⏳ Starting personalization job…", "info");
+      try {
+        var res = await fetch(SERVER + "/api/generate-book", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ templateId: savedTemplateId, identityId: savedIdentityId, childName: childName })
+        });
+        var data = await res.json();
+        if (res.ok) {
+          savedJobId = data.jobId;
+          showPill("pill-job", "pill-job-t", "Job ID: " + savedJobId);
+          pollJobStatus();
+        } else {
+          showR(rDiv, "❌ " + data.error, "error");
+          document.getElementById("genBtn").disabled = false;
+        }
+      } catch (e) {
+        showR(rDiv, "❌ " + e.message, "error");
+        document.getElementById("genBtn").disabled = false;
+      }
+    }
+
+    // ── Poll ──
+    function pollJobStatus() {
+      pollInterval = setInterval(async function () {
+        try {
+          var res = await fetch(SERVER + "/api/jobs/" + savedJobId);
+          var job = await res.json();
+          var rDiv = document.getElementById("r2");
+          var pct = job.progress || 0;
+          document.getElementById("prog-fill").style.width = pct + "%";
+          document.getElementById("prog-pct").textContent = pct + "%";
+          document.getElementById("prog-lbl").textContent = job.message || "Processing…";
+          showR(rDiv, "⏳ " + job.message + "\n\nProgress: " + pct + "%", "info");
+          if (job.status === "completed") {
+            clearInterval(pollInterval);
+            showR(rDiv, "✅ Done!\n\nPages: " + job.result.totalPages + "  |  Swapped: " + job.result.successCount + "  |  Failed: " + job.result.failCount, "success");
+            document.getElementById("genBtn").disabled = false;
+            // Build summary
+            document.getElementById("summary").innerHTML =
+              sRow("📄", "Template ID", savedTemplateId) +
+              sRow("👤", "Identity ID", savedIdentityId) +
+              sRow("🔖", "Job ID", savedJobId) +
+              sRow("📖", "Pages", job.result.totalPages) +
+              sRow("✅", "Faces swapped", job.result.successCount) +
+              sRow("❌", "Failed", job.result.failCount);
+            setTimeout(function () { goTo(3); launchConfetti(); }, 1400);
+          }
+          if (job.status === "failed") {
+            clearInterval(pollInterval);
+            showR(rDiv, "❌ " + job.message, "error");
+            document.getElementById("genBtn").disabled = false;
+          }
+        } catch (e) { }
+      }, 3000);
+    }
+
+    // ── STEP 4: Download ──
+    function downloadBook() {
+      if (!savedJobId) { alert("No book generated yet!"); return; }
+      showR(document.getElementById("r3"), "📥 Opening download link…", "info");
+      window.open(SERVER + "/api/jobs/" + savedJobId + "/download");
+    }
+
+    // ── Helpers ──
+    function showR(div, msg, type) { div.style.display = "block"; div.className = "rbox " + type; div.textContent = msg; }
+    function showPill(pid, sid, text) { var p = document.getElementById(pid); p.style.display = "flex"; document.getElementById(sid).textContent = text; }
+    function sRow(icon, label, val) {
+      return '<div class="sum-row"><span class="sl">' + icon + ' ' + label + '</span><span class="sv">' + val + '</span></div>';
+    }
+
+    // ── Confetti burst ──
+    function launchConfetti() {
+      var colors = ['#f472b6', '#a78bfa', '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#c084fc', '#38bdf8'];
+      var emojis = ['🎉', '⭐', '✨', '🎈', '🌟', '🥳'];
+      // 80 color squares
+      for (var i = 0; i < 80; i++) {
+        (function (i) {
+          setTimeout(function () {
+            var p = document.createElement('div');
+            p.className = 'confetti-p';
+            var size = 6 + Math.random() * 8;
+            p.style.cssText = [
+              'left:' + (Math.random() * 100) + 'vw',
+              'top:-12px',
+              'width:' + size + 'px',
+              'height:' + size + 'px',
+              'background:' + colors[Math.floor(Math.random() * colors.length)],
+              'border-radius:' + (Math.random() > 0.5 ? '50%' : '2px'),
+              'animation-duration:' + (1.8 + Math.random() * 2) + 's',
+              'animation-delay:0s'
+            ].join(';');
+            document.body.appendChild(p);
+            setTimeout(function () { p.remove(); }, 4500);
+          }, i * 25);
+        })(i);
+      }
+      // 14 emoji particles
+      for (var j = 0; j < 14; j++) {
+        (function (j) {
+          setTimeout(function () {
+            var e = document.createElement('div');
+            e.className = 'confetti-p';
+            e.style.cssText = [
+              'left:' + (5 + Math.random() * 90) + 'vw',
+              'top:-20px',
+              'font-size:' + (16 + Math.random() * 16) + 'px',
+              'background:none',
+              'width:auto',
+              'height:auto',
+              'animation-duration:' + (2.5 + Math.random() * 1.5) + 's'
+            ].join(';');
+            e.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            document.body.appendChild(e);
+            setTimeout(function () { e.remove(); }, 5000);
+          }, j * 120);
+        })(j);
+      }
+    }
+  </script>
+</body>
+
+</html>

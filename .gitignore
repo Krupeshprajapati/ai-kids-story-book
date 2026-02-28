@@ -1,0 +1,45 @@
+# Node
+node_modules/
+npm-debug.log
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Next.js
+.next/
+out/
+
+# Environment variables
+.env
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build folders
+dist/
+build/
+
+# Generated files
+backend/generated_pdfs/
+backend/generated_images/
+backend/models/
+
+ai-engine/server/output/
+ai-engine/server/templates/
+ai-engine/server/uploads/
+
+# ML Models
+backend/models/
+*.onnx
+
+# Uploads
+uploads/
+
+*.pdf
